@@ -38,8 +38,8 @@ class VectorStore:
             path=self.persist_dir,
             settings=ChromaSettings(anonymized_telemetry=False),
         )
-        self._document_locks: Dict[tuple[str, str], threading.RLock] = {}
-        self._document_locks_guard = threading.Lock()
+        # Fixed lock striping avoids an unbounded per-document lock registry.
+        self._document_locks = [threading.RLock() for _ in range(64)]
 
     def get_collection(self, workspace_id: str):
         collection_name = sanitize_collection_name(workspace_id)
@@ -51,12 +51,10 @@ class VectorStore:
     def _get_document_lock(self, workspace_id: str, document_id: str):
         # Lazily initialize as well so lightweight test doubles created with
         # object.__new__ can exercise the store without calling __init__.
-        if not hasattr(self, "_document_locks_guard"):
-            self._document_locks_guard = threading.Lock()
-            self._document_locks = {}
+        if not hasattr(self, "_document_locks"):
+            self._document_locks = [threading.RLock() for _ in range(64)]
         key = (str(workspace_id), str(document_id))
-        with self._document_locks_guard:
-            return self._document_locks.setdefault(key, threading.RLock())
+        return self._document_locks[hash(key) % len(self._document_locks)]
 
     @staticmethod
     def _document_filter(workspace_id: str, document_id: str):
