@@ -171,18 +171,18 @@ async def ingest_document(
     Ingests reference documents (PDF/TXT), enforces independent AI-service
     resource limits, chunks the extracted text, and indexes it in ChromaDB.
     """
-    if not workspace_id or not workspace_id.strip():
-        raise HTTPException(status_code=400, detail="workspace_id is required.")
-
-    if not file.filename:
-        raise HTTPException(status_code=400, detail="Uploaded file must have a filename.")
-
+    filename = file.filename or "<unknown>"
     doc_id = document_id.strip() if document_id and document_id.strip() else f"doc_{uuid.uuid4().hex[:12]}"
-    filename = file.filename
-
-    logger.info(f"Ingesting file '{filename}' for workspace '{workspace_id}' (DocID: {doc_id})")
 
     try:
+        if not workspace_id or not workspace_id.strip():
+            raise HTTPException(status_code=400, detail="workspace_id is required.")
+
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="Uploaded file must have a filename.")
+
+        logger.info(f"Ingesting file '{filename}' for workspace '{workspace_id}' (DocID: {doc_id})")
+
         max_upload_bytes = settings.max_upload_size_mb * 1024 * 1024
         content_bytes = await read_upload_with_limit(file, max_upload_bytes)
         if len(content_bytes) == 0:

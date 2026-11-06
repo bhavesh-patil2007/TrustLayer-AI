@@ -6,7 +6,7 @@ from pypdf import PdfWriter
 
 from config import settings
 from main import ingest_document, read_upload_with_limit
-from pipeline import vector_store as vector_store_module
+from pipeline.vector_store import vector_store
 from pipeline.extractor import IngestionLimitError, extract_text_from_bytes
 
 
@@ -77,7 +77,7 @@ async def test_oversized_upload_never_reaches_vector_indexing(monkeypatch):
     monkeypatch.setattr(settings, "max_upload_size_mb", 1)
     indexed = []
     monkeypatch.setattr(
-        vector_store_module.vector_store,
+        vector_store,
         "add_chunks",
         lambda **kwargs: indexed.append(kwargs),
     )
@@ -97,7 +97,7 @@ async def test_pdf_page_limit_never_reaches_vector_indexing(monkeypatch):
     monkeypatch.setattr(settings, "max_pdf_pages", 2)
     indexed = []
     monkeypatch.setattr(
-        vector_store_module.vector_store,
+        vector_store,
         "add_chunks",
         lambda **kwargs: indexed.append(kwargs),
     )
@@ -117,7 +117,7 @@ async def test_extracted_text_limit_never_reaches_vector_indexing(monkeypatch):
     monkeypatch.setattr(settings, "max_extracted_chars", 5)
     indexed = []
     monkeypatch.setattr(
-        vector_store_module.vector_store,
+        vector_store,
         "add_chunks",
         lambda **kwargs: indexed.append(kwargs),
     )
